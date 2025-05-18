@@ -1,0 +1,296 @@
+<!DOCTYPE html><html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fantasy Life Quest</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap');body {
+  font-family: 'MedievalSharp', cursive;
+  background: url("https://images.unsplash.com/photo-1710975090629-118845a3f848?q=80&w=1526&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D") no-repeat center center fixed;
+  background-size: cover;
+  color: #fffbea;
+  margin: 0;
+  padding: 0;
+}
+.container {
+  max-width: 600px;
+  margin: 2rem auto;
+  padding: 1rem;
+  background: rgba(24, 20, 10, 0.95);
+  border-radius: 12px;
+  box-shadow: 0 0 20px #d4af37;
+}
+h1 {
+  text-align: center;
+  color: #d4af37;
+  font-size: 2.5rem;
+  text-shadow: 2px 2px 5px black;
+}
+input, select, button {
+  padding: 0.5rem;
+  margin: 0.5rem 0;
+  width: 100%;
+  border-radius: 6px;
+  border: none;
+  font-family: 'MedievalSharp', cursive;
+}
+.task, .history-entry {
+  background: #3b2f20;
+  padding: 0.5rem;
+  border-radius: 6px;
+  margin-top: 0.5rem;
+  border: 1px solid #d4af37;
+}
+.task button {
+  margin-top: 0.3rem;
+}
+.stats, .dashboard {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+.dashboard {
+  background: #2b2114;
+  padding: 1rem;
+  border-radius: 8px;
+}
+.dashboard select, .dashboard input {
+  margin-top: 0.5rem;
+}
+.avatar {
+  width: 120px;
+  height: auto;
+  border-radius: 8px;
+  margin: 0.5rem auto;
+  display: block;
+  border: 2px solid #d4af37;
+}
+.history {
+  margin-top: 2rem;
+}
+.history h2 {
+  color: lightgreen;
+}
+.progress-bar {
+  background: #d4af37;
+  height: 10px;
+  border-radius: 5px;
+  margin-top: 4px;
+}
+.progress-container {
+  background: #ccc;
+  height: 10px;
+  border-radius: 5px;
+}
+
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Fantasy Life Quest</h1>
+    <div class="dashboard">
+      <h2>Anakin's Dashboard</h2>
+      <label for="charNameInput">Name:</label>
+      <input id="charNameInput" value="Anakin" onchange="updateName()" />
+      <p>Class: <span id="charClassDisplay">Warrior</span></p>
+      <img id="classAvatar" class="avatar" src="" alt="Class Avatar">
+      <label for="classSelect">Choose Class:</label>
+      <select id="classSelect" onchange="updateClass()">
+        <option value="Warrior">Warrior</option>
+        <option value="Mage">Mage</option>
+        <option value="Rogue">Rogue</option>
+        <option value="Paladin">Paladin</option>
+      </select>
+    </div><div class="stats">
+  <p>Level: <span id="level">1</span></p>
+  <p>XP: <span id="xp">0</span> / <span id="xpMax">100</span></p>
+  <div class="progress-container">
+    <div id="xpBar" class="progress-bar" style="width: 0%"></div>
+  </div>
+</div>
+<input type="text" id="taskInput" placeholder="New Quest..." />
+<select id="categoryInput">
+  <option value="Study">Study</option>
+  <option value="Exercise">Exercise</option>
+  <option value="Mindfulness">Mindfulness</option>
+  <option value="Other">Other</option>
+</select>
+<input type="number" id="xpInput" placeholder="Enter XP (e.g. 10, 25, 50)" min="1" />
+<input type="date" id="dueDateInput" />
+<button onclick="addTask()">Add Quest</button>
+<div id="taskList"></div>
+
+<div class="history">
+  <h2>Completed Quests</h2>
+  <div id="historyList"></div>
+</div>
+<button onclick="resetGame()">Reset All</button>
+
+  </div><audio id="sound-complete" src="bonus-points-190035.mp3" preload="auto"></audio> <audio id="sound-add" src="mouse-click-290204.mp3" preload="auto"></audio> <audio id="sound-levelup" src="game-level-complete-143022.mp3" preload="auto"></audio> <audio id="sound-reset" src="a-sudden-appearance-143034.mp3" preload="auto"></audio>
+
+  <script>
+    let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+    let history = JSON.parse(localStorage.getItem('history')) || [];
+    let xp = parseInt(localStorage.getItem('xp')) || 0;
+    let level = parseInt(localStorage.getItem('level')) || 1;
+    let charClass = localStorage.getItem('charClass') || 'Warrior';
+    let charName = localStorage.getItem('charName') || 'Anakin';
+    let xpMax = level * 100;
+
+    const xpSpan = document.getElementById('xp');
+    const levelSpan = document.getElementById('level');
+    const xpMaxSpan = document.getElementById('xpMax');
+    const xpBar = document.getElementById('xpBar');
+    const taskList = document.getElementById('taskList');
+    const historyList = document.getElementById('historyList');
+    const charClassDisplay = document.getElementById('charClassDisplay');
+    const charNameDisplay = document.getElementById('charNameDisplay');
+    const classSelect = document.getElementById('classSelect');
+    const classAvatar = document.getElementById('classAvatar');
+    const charNameInput = document.getElementById('charNameInput');
+
+    const soundComplete = document.getElementById('sound-complete');
+    const soundAdd = document.getElementById('sound-add');
+    const soundLevelUp = document.getElementById('sound-levelup');
+    const soundReset = document.getElementById('sound-reset');
+
+    function playSound(sound) {
+      sound.currentTime = 0;
+      sound.play();
+    }
+
+    function updateStats() {
+      xpSpan.textContent = xp;
+      levelSpan.textContent = level;
+      xpMaxSpan.textContent = xpMax;
+      xpBar.style.width = `${(xp / xpMax) * 100}%`;
+    }
+
+    function saveData() {
+      localStorage.setItem('tasks', JSON.stringify(tasks));
+      localStorage.setItem('history', JSON.stringify(history));
+      localStorage.setItem('xp', xp);
+      localStorage.setItem('level', level);
+      localStorage.setItem('charClass', charClass);
+      localStorage.setItem('charName', charName);
+    }
+
+    function updateClass() {
+      charClass = classSelect.value;
+      charClassDisplay.textContent = charClass;
+      updateAvatar();
+      saveData();
+    }
+
+    function updateAvatar() {
+      let avatarURL = '';
+      switch (charClass) {
+        case 'Warrior':
+          avatarURL = 'https://img.freepik.com/premium-vector/ninja-warrior-with-sword-armor_711010-2663.jpg';
+          break;
+        case 'Mage':
+          avatarURL = 'https://img.freepik.com/free-photo/wizard-cartoon-illustration_23-2151626938.jpg';
+          break;
+        case 'Rogue':
+          avatarURL = 'https://img.freepik.com/premium-vector/red-yellow-sign-that-says-man-with-red-hat-it_1090087-143002.jpg';
+          break;
+        case 'Paladin':
+          avatarURL = 'https://img.freepik.com/free-vector/medieval-knight-armor_1308-174955.jpg';
+          break;
+        default:
+          avatarURL = '';
+      }
+      classAvatar.src = avatarURL;
+    }
+
+    function updateName() {
+      charName = charNameInput.value || 'Anakin';
+      saveData();
+    }
+
+    function addTask() {
+      const input = document.getElementById('taskInput');
+      const category = document.getElementById('categoryInput').value;
+      const xpValue = parseInt(document.getElementById('xpInput').value);
+      const dueDate = document.getElementById('dueDateInput').value;
+      const text = input.value.trim();
+      if (!text || isNaN(xpValue) || xpValue <= 0) return;
+      tasks.push({ text, category, xp: xpValue, dueDate });
+      input.value = '';
+      document.getElementById('xpInput').value = '';
+      document.getElementById('dueDateInput').value = '';
+      renderTasks();
+      saveData();
+      playSound(soundAdd);
+    }
+
+    function completeTask(index) {
+      const task = tasks[index];
+      tasks.splice(index, 1);
+      xp += task.xp;
+      let leveledUp = false;
+      if (xp >= xpMax) {
+        xp -= xpMax;
+        level++;
+        xpMax = level * 100;
+        leveledUp = true;
+      }
+      history.unshift({ ...task, completedAt: new Date().toLocaleString() });
+      renderTasks();
+      renderHistory();
+      updateStats();
+      saveData();
+      playSound(leveledUp ? soundLevelUp : soundComplete);
+    }
+
+    function deleteTask(index) {
+      tasks.splice(index, 1);
+      renderTasks();
+      saveData();
+    }
+
+    function resetGame() {
+      if (confirm("Are you sure you want to reset everything?")) {
+        playSound(soundReset);
+        localStorage.clear();
+        setTimeout(() => location.reload(), 1000);
+      }
+    }
+
+    function renderTasks() {
+      taskList.innerHTML = '';
+      tasks.forEach((task, i) => {
+        const div = document.createElement('div');
+        div.className = 'task';
+        div.innerHTML = `
+          <p><strong>[${task.category}]</strong> ${task.text}</p>
+          <p>XP: ${task.xp}</p>
+          <p>Due: ${task.dueDate || 'No date'}</p>
+          <button onclick="completeTask(${i})">Complete</button>
+          <button onclick="deleteTask(${i})">Delete</button>
+        `;
+        taskList.appendChild(div);
+      });
+    }
+
+    function renderHistory() {
+      historyList.innerHTML = '';
+      history.forEach(entry => {
+        const div = document.createElement('div');
+        div.className = 'history-entry';
+        div.innerHTML = `
+          <p><strong>[${entry.category}]</strong> ${entry.text}</p>
+          <p>XP: ${entry.xp} | Completed: ${entry.completedAt}</p>
+        `;
+        historyList.appendChild(div);
+      });
+    }
+
+    classSelect.value = charClass;
+    charClassDisplay.textContent = charClass;
+    charNameInput.value = charName;
+    updateAvatar();
+    updateStats();
+    renderTasks();
+    renderHistory();
+  </script></body>
+</html>
